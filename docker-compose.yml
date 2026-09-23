@@ -1,0 +1,89 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: tt_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - tt_network
+
+  ai-service:
+    build:
+      context: ./AI-service
+      dockerfile: Dockerfile
+    container_name: tt_ai_service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - LLM_PROVIDER=ollama
+      - LLM_MODEL=qwen2.5:7b
+      # Uses host.docker.internal to reach Ollama running on the host machine
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - AI_SERVICE_API_KEY=your_secure_ai_api_key
+      - HOST=0.0.0.0
+      - PORT=8000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - tt_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tt_backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/ttrecruit
+      - JWT_ACCESS_SECRET=your_super_secret_access_key
+      - JWT_REFRESH_SECRET=your_super_secret_refresh_key
+      - CLIENT_URL=http://localhost:5173
+      - AI_SERVICE_URL=http://ai-service:8000
+      - AI_SERVICE_API_KEY=your_secure_ai_api_key
+    depends_on:
+      - mongodb
+      - ai-service
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - tt_network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tt_frontend
+    restart: unless-stopped
+    ports:
+      # Map 5173 on host to 80 inside the container (nginx) to keep the same URL for users
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - tt_network
+
+volumes:
+  mongodb_data:
+  uploads_data:
+
+networks:
+  tt_network:
+    driver: bridge
