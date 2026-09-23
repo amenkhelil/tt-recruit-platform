@@ -32,14 +32,7 @@ const applicationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-applicationSchema.index(
-  { applicant: 1, status: 1 },
-  {
-    unique: true,
-    partialFilterExpression: { status: { $in: ['pending', 'shortlisted', 'accepted'] } },
-  }
-);
-
+applicationSchema.index({ applicant: 1, job: 1 }, { unique: true });
 applicationSchema.index({ job: 1, matchScore: -1 });
 
 module.exports = mongoose.model('Application', applicationSchema);

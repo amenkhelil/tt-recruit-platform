@@ -23,7 +23,6 @@ const jobSchema = new mongoose.Schema(
       default: 'active',
     },
     postedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     applicantsCount: { type: Number, default: 0 },
     closingDate: { type: Date, required: true },
   },

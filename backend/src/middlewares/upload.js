@@ -8,8 +8,17 @@ const env = require('../config/env');
 
 const UPLOAD_ROOT = path.join(__dirname, '../../uploads');
 
-const ALLOWED_RESUME_TYPES = ['application/pdf'];
-const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_RESUME_TYPES = [
+  { ext: 'pdf', mime: 'application/pdf' },
+  { ext: 'docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+  { ext: 'odt', mime: 'application/vnd.oasis.opendocument.text' },
+];
+const ALLOWED_AVATAR_TYPES = [
+  { ext: 'jpg', mime: 'image/jpeg' },
+  { ext: 'jpeg', mime: 'image/jpeg' },
+  { ext: 'png', mime: 'image/png' },
+  { ext: 'webp', mime: 'image/webp' },
+];
 
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
@@ -25,13 +34,28 @@ function buildMulter(maxSizeMb) {
 const uploadResumeMiddleware = buildMulter(env.MAX_RESUME_SIZE_MB).single('resume');
 const uploadAvatarMiddleware = buildMulter(env.MAX_AVATAR_SIZE_MB).single('avatar');
 
-function persistFile({ subFolder, allowedMimeTypes, fieldLabel }) {
+function getAllowedFileInfo(file, detected, allowedTypes) {
+  const originalExt = path.extname(file.originalname || '').slice(1).toLowerCase();
+  const candidates = [
+    detected?.mime,
+    file.mimetype,
+  ].filter(Boolean);
+
+  return allowedTypes.find(
+    (type) =>
+      candidates.includes(type.mime) ||
+      (originalExt === type.ext && (detected?.mime === 'application/zip' || !detected))
+  );
+}
+
+function persistFile({ subFolder, allowedTypes, fieldLabel }) {
   return async (req, res, next) => {
     try {
       if (!req.file) throw ApiError.badRequest(`No ${fieldLabel} file provided`);
 
       const detected = await fromBuffer(req.file.buffer);
-      if (!detected || !allowedMimeTypes.includes(detected.mime)) {
+      const fileInfo = getAllowedFileInfo(req.file, detected, allowedTypes);
+      if (!fileInfo) {
         throw ApiError.badRequest(`Invalid ${fieldLabel} file type`);
       }
 
@@ -39,7 +63,7 @@ function persistFile({ subFolder, allowedMimeTypes, fieldLabel }) {
       const targetDir = path.join(UPLOAD_ROOT, subFolder, userId);
       ensureDir(targetDir);
 
-      const uniqueName = `${uuidv4()}.${detected.ext}`;
+      const uniqueName = `${uuidv4()}.${fileInfo.ext}`;
       const absolutePath = path.join(targetDir, uniqueName);
       fs.writeFileSync(absolutePath, req.file.buffer);
 
@@ -47,7 +71,7 @@ function persistFile({ subFolder, allowedMimeTypes, fieldLabel }) {
         fileName: req.file.originalname,
         filePath: path.relative(UPLOAD_ROOT, absolutePath),
         fileSize: req.file.size,
-        mimeType: detected.mime,
+        mimeType: fileInfo.mime,
       };
       next();
     } catch (err) {
@@ -58,13 +82,13 @@ function persistFile({ subFolder, allowedMimeTypes, fieldLabel }) {
 
 const persistResume = persistFile({
   subFolder: 'resumes',
-  allowedMimeTypes: ALLOWED_RESUME_TYPES,
+  allowedTypes: ALLOWED_RESUME_TYPES,
   fieldLabel: 'resume',
 });
 
 const persistAvatar = persistFile({
   subFolder: 'avatars',
-  allowedMimeTypes: ALLOWED_AVATAR_TYPES,
+  allowedTypes: ALLOWED_AVATAR_TYPES,
   fieldLabel: 'avatar',
 });
 

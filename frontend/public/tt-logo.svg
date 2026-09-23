@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 50" fill="none">
+  <defs>
+    <linearGradient id="tt-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#005baa" />
+      <stop offset="50%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+    <linearGradient id="tt-grad-2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f43f5e" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Stylized TT symbol wings -->
+  <path d="M 12 10 C 22 10, 28 16, 28 25 C 28 34, 20 40, 10 40 C 6 40, 4 36, 4 32 C 4 28, 8 26, 12 26 C 18 26, 20 30, 20 32" stroke="url(#tt-grad-1)" stroke-width="4.5" stroke-linecap="round" fill="none" />
+  <path d="M 22 10 C 32 10, 38 18, 38 27 C 38 36, 30 42, 22 42" stroke="url(#tt-grad-2)" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0.9" />
+  
+  <!-- TT Text -->
+  <text x="46" y="32" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="22" fill="#005baa" letter-spacing="-0.5">TT</text>
+  <text x="78" y="27" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="13" fill="#0b192c" letter-spacing="1.5">RECRUIT</text>
+  <text x="78" y="38" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="8" fill="#64748b" letter-spacing="2">TUNISIE TELECOM</text>
+</svg>

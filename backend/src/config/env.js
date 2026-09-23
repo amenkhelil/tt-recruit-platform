@@ -6,6 +6,17 @@ function required(name) {
   return value;
 }
 
+function parseDurationToMs(duration, fallbackMs) {
+  const match = /^(\d+)([smhd])$/.exec(duration);
+  if (!match) return fallbackMs;
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+  const multipliers = { s: 1000, m: 60 * 1000, h: 60 * 60 * 1000, d: 24 * 60 * 60 * 1000 };
+  return value * multipliers[unit];
+}
+
+const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+
 module.exports = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT || '5000', 10),
@@ -15,8 +26,8 @@ module.exports = {
   JWT_ACCESS_SECRET: required('JWT_ACCESS_SECRET'),
   JWT_REFRESH_SECRET: required('JWT_REFRESH_SECRET'),
   JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
-  JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
-  JWT_REFRESH_EXPIRES_IN_MS: 7 * 24 * 60 * 60 * 1000,
+  JWT_REFRESH_EXPIRES_IN,
+  JWT_REFRESH_EXPIRES_IN_MS: parseDurationToMs(JWT_REFRESH_EXPIRES_IN, 7 * 24 * 60 * 60 * 1000),
 
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
 

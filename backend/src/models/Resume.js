@@ -58,6 +58,7 @@ const resumeSchema = new mongoose.Schema(
       enum: ['pending', 'completed', 'failed'],
       default: 'pending',
     },
+    extractionError: { type: String, default: '' },
 
     skills: { type: [String], default: [] },
     experiences: { type: [experienceSchema], default: [] },
