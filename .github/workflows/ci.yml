@@ -1,0 +1,124 @@
+name: TT Recruit System CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  frontend-build:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+      - run: npm ci
+      - run: npm run build
+
+  backend-validation:
+    name: Validate Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: './backend/package-lock.json'
+      - run: npm ci
+      # Basic check to ensure the app doesn't immediately crash on syntax errors
+      # Since we don't have unit tests, we test if node can parse the entrypoint
+      - run: node --check src/server.js
+
+  ai-service-validation:
+    name: Validate AI Service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./AI-service
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      # Basic syntax and import check for FastAPI application
+      - run: python -m py_compile app/main.py
+
+  sonarcloud:
+    name: SonarCloud Code Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        # Automatically fails or skips if SONAR_TOKEN is not set, preventing pipeline breakage
+
+  docker-trivy-scan:
+    name: Build Docker & Run Trivy Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # --- Frontend ---
+      - name: Build Frontend Image
+        run: docker build -t tt-recruit-frontend:test ./frontend
+
+      - name: Run Trivy vulnerability scanner on Frontend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tt-recruit-frontend:test'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      # --- Backend ---
+      - name: Build Backend Image
+        run: docker build -t tt-recruit-backend:test ./backend
+
+      - name: Run Trivy vulnerability scanner on Backend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tt-recruit-backend:test'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      # --- AI Service ---
+      - name: Build AI Service Image
+        run: docker build -t tt-recruit-ai:test ./AI-service
+
+      - name: Run Trivy vulnerability scanner on AI Service
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tt-recruit-ai:test'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'

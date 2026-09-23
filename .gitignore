@@ -1,0 +1,22 @@
+# Python / AI Service
+venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+.pytest_cache/
+
+# Node.js
+node_modules/
+dist/
+dist-ssr/
+uploads/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+*.log
+
+.venv/
